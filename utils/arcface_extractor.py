@@ -5,17 +5,28 @@ import numpy as np
 
 def extract_face_embeddings(image_path):
     """
-    Trích xuất embedding vector từ một ảnh khuôn mặt (đã crop)
+    Trích xuất embedding vector từ một ảnh khuôn mặt đã crop sẵn.
+
+    Args:
+        image_path (str): Đường dẫn tới file ảnh đầu vào, ảnh đã được crop chỉ chứa 1 khuôn mặt.
+
+    Output:
+        numpy.ndarray: Vector embedding khuôn mặt dạng numpy array.
     """
     img = face_recognition.load_image_file(image_path)
-    # Lấy tất cả các embedding trong ảnh (mặc dù bạn chỉ có một khuôn mặt, sẽ có 1 embedding duy nhất)
-    face_embeddings = face_recognition.face_encodings(img)
+    
+    # Lấy kích thước ảnh
+    h, w = img.shape[:2]
+    # Tọa độ bounding box khuôn mặt: (top, right, bottom, left)
+    face_location = [(0, w, h, 0)]
+    
+    # Trích xuất embedding dùng tọa độ khuôn mặt đã biết, bỏ qua detect
+    face_embeddings = face_recognition.face_encodings(img, known_face_locations=face_location)
     
     if not face_embeddings:
         print(f"⚠️ Không tìm thấy khuôn mặt trong {image_path}")
         return None
     
-    # Trả về embedding đầu tiên trong danh sách (nếu có nhiều khuôn mặt)
     return face_embeddings[0]
 
 def build_face_database(folder_path, save_path='face_db_face_recognition.json'):

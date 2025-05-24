@@ -1,18 +1,19 @@
 import cv2
 import mediapipe as mp
-from config.cfg_py import config
+from config.cfg_py import *
 import numpy as np
 
 class FaceDetectionPredictor:
     def __init__(self):
-        detection_conf = config.get("face_detection_model.min_detection_confidence", 0.5)
+        detection_conf   = config.get("face_detection_model.min_detection_confidence", 0.5)
+        refine_landmarks = config.get("face_detection_model.refine_landmarks", False)
         
         self.mp_face_mesh = mp.solutions.face_mesh
-        self.mp_drawing = mp.solutions.drawing_utils
-        self.output_size = 224
-        self.face_mesh = self.mp_face_mesh.FaceMesh(
+        self.mp_drawing   = mp.solutions.drawing_utils
+        self.output_size  = 224
+        self.face_mesh    = self.mp_face_mesh.FaceMesh(
             min_detection_confidence=detection_conf,
-            refine_landmarks=False 
+            refine_landmarks        =refine_landmarks
         )
 
     def process(self, image):

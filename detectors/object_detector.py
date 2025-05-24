@@ -1,13 +1,19 @@
+import os
 from trackers.object_tracker import ObjectTracker 
 from config.cfg_py import config
-import cv2
+os.environ["YOLO_VERBOSE"] = "FALSE"
+
 from ultralytics import YOLOE
 
 class HumanDetectionPredictor:
-    def __init__(self, yolo_model_path="yoloe-11l-seg.pt", detect_interval=5, use_tracking_prediction=False):
+    def __init__(self, 
+                 yolo_model_path="yoloe-11l-seg.pt", 
+                 detect_interval=5, 
+                 use_tracking_prediction=False
+    ):
         self.yolo_model_path = yolo_model_path
         self.detect_interval = detect_interval
-        self.use_tracking_prediction = use_tracking_prediction  # Thêm flag cấu hình
+        self.use_tracking_prediction = use_tracking_prediction
 
         # Khởi tạo mô hình YOLO và tracker
         self.yolo_model = YOLOE(self.yolo_model_path)
@@ -24,7 +30,7 @@ class HumanDetectionPredictor:
         if use_yolo:
             # === YOLO Detection ===
             boxes_yolo = []
-            results = self.yolo_model.predict(frame, device="cuda", conf=0.5, iou=0.5)[0]
+            results = self.yolo_model.predict(frame, device="cuda", conf=0.5, iou=0.5, verbose=False)[0]
             if results.boxes is not None:
                 for box, conf in zip(results.boxes.xyxy, results.boxes.conf):
                     x1, y1, x2, y2 = map(int, box[:4].tolist())

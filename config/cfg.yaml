@@ -1,8 +1,11 @@
+human_detection_model:
+  
+
 face_detection_model:
   name: mediapipe
   model_selection: 1       
   min_detection_confidence: 0.5
-  refine_landmarks: true
+  refine_landmarks: false
 
 tracker:
   max_age: 30
@@ -12,9 +15,10 @@ tracker:
 database:
   mongo_uri: "mongodb+srv://hoangduongle2k3:duong373@intrusionalert.uztgguc.mongodb.net/your_db_name?retryWrites=true&w=majority"
   db_name: IntrusionAlert
+  tabel_name: alerts
 
 minio:
-  endpoint: minio:9000
+  endpoint: localhost:9000
   access_key: minioadmin
   secret_key: minioadmin
   bucket_name: intrusion-images

@@ -51,6 +51,8 @@ from schemas.area import *
 from config.cfg_py import config
 from database.log_results_to_db import LogResults
 
+import torch
+
 
 video_path = r"F:\VScode_NHD\intrusion_alert\video_test2.mp4"  # Đường dẫn video đầu vào
 output_path = "output_video_2.avi"  # Đường dẫn video đầu ra
@@ -66,9 +68,8 @@ areas = [
 ]
 
 def main():
-        
     log_res = LogResults()
-    service = IntrusionAlertService(areas=areas)
+    service = IntrusionAlertService(areas=None)
 
     frame_idx = 0
 
@@ -78,12 +79,14 @@ def main():
         
         if not ret:
             break
-
+        
         res = service.service_implement(frame, frame_idx)
         log_res._intrusion_alert_log(res)
         
         processed_frame = res["image"]  # Giả sử image là frame đã vẽ bbox, text, v.v.
-        print(res["intrusion_results"])
+        end_time = time.time()
+        
+        # print(res["intrusion_results"])
         cv2.imshow("Inference", processed_frame)
 
         out.write(processed_frame)
@@ -92,7 +95,6 @@ def main():
             break
         
         frame_idx += 1
-        end_time = time.time()
         print(f"Frame {frame_idx} processed in {end_time - start_time:.2f} seconds")
         
     cap.release()

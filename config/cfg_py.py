@@ -23,11 +23,12 @@ config = Config()
 face_detection_name = config.get("face_detection_model.name", "mediapipe")
 model_selection     = config.get("face_detection_model.model_selection", 1)
 detection_conf      = config.get("face_detection_model.min_detection_confidence", 0.5)
-refine_landmarks    = config.get("face_detection_model.refine_landmarks", True)
+refine_landmarks    = config.get("face_detection_model.refine_landmarks", False)
 
 # Lấy thông tin từ cấu hình cho database
-mongo_uri = config.get("database.mongo_uri", "mongodb://localhost:27017")
-db_name   = config.get("database.db_name"  , "intrusion_db")
+mongo_uri    = config.get("database.mongo_uri", "mongodb://localhost:27017")
+db_name      = config.get("database.db_name"  , "intrusion_db")
+table_name   = config.get("database.table_name"  , "alerts")
 
 # Lấy thông tin từ cấu hình cho MinIO
 minio_endpoint    = config.get("minio.endpoint"   , "minio:9000")
@@ -41,7 +42,6 @@ tracker_n_init  = config.get("tracker.n_init" , 3)
 
 # In ra để kiểm tra
 print(f"Face Detection Model    : {face_detection_name}")
-print(f"Model Selection         : {model_selection}")
 print(f"Min Detection Confidence: {detection_conf}")
 print(f"Refine Landmarks        : {refine_landmarks}")
 print(f"Mongo URI               : {mongo_uri}")

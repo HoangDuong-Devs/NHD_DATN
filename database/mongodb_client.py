@@ -1,14 +1,15 @@
 from pymongo import MongoClient
+from config.cfg_py import config
 
 class Database:
     _client = None
     _db = None
 
     @staticmethod
-    def initialize(uri="mongodb://localhost:27017", db_name="mydatabase"):
+    def initialize(uri=config.get("database.mongo_uri", "mongodb://localhost:27017"), db_name=config.get("database.db_name"  , "intrusion_db")):
         if Database._client is None:
             Database._client = MongoClient(uri)
-            Database._db = Database._client[db_name]
+            Database._db     = Database._client[db_name]
             print("MongoDB connected.")
 
     @staticmethod
@@ -16,7 +17,7 @@ class Database:
         coll = Database._db[table]
         # Nếu có unique_fields, bạn có thể check document tồn tại rồi update hoặc skip
         if unique_fields:
-            query = {field: record.get(field) for field in unique_fields}
+            query    = {field: record.get(field) for field in unique_fields}
             existing = coll.find_one(query)
             if existing:
                 return "Already exists"

@@ -5,3 +5,9 @@ video_test2.mp4
 yoloe-11l-seg.pt
 test.png
 output_video_2.avi
+
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd

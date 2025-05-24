@@ -50,8 +50,8 @@ def crop_body(image, box):
 def update_objects(objects, id, box, original_image):
     if id not in objects:
         objects[id] = Object(id, box)
-        cropped_image, box = crop_body(original_image, box)
-        objects[id].update_box(box, cropped_image)
+    cropped_image, box = crop_body(original_image, box)
+    objects[id].update_box(box, cropped_image)
             
 def get_captured_image(objects, id):
     """_lấy ảnh và trạng thái nhận dạng của đối tượng_

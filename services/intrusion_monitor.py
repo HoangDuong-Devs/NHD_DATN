@@ -16,7 +16,7 @@ class IntrusionAlertService:
         self.cropped_ids              = set()                    # set đối tượng đã được capture
         self.face_recognition_feature = True                     # Sử dụng chức năng nhận diện khuôn mặt 
         self.areas                    = kwargs.get("areas", [])  # Danh sách các khu vực   
-        self.sub_detector = None                                 
+        self.sub_detector             = None                                 
         self.setup()
         self.initialize_detector(detector)
 
@@ -54,15 +54,15 @@ class IntrusionAlertService:
                 
                 # Lưu trữ các đối tượng xuất hiện tại thời điểm hiện tại
                 temp_objects[id] = self.objects[id]
-            
+                print(self.objects[id].appearance_count)
                 # Kiểm tra điều kiện để capture đối tượng
                 if (
                     (self.objects[id].appearance_count) >= self.frame_appearance
                     and id not in self.cropped_ids
-                    and self.objects[id].lastest_image is not None
+                    and self.objects[id].latest_image is not None
                 ):
                     captured_images[id] = get_captured_image(self.objects, id)
-                 
+                    self.cropped_ids.add(id)
         
             # Tối ưu xử lý đối tượng biến mất đột ngột (Xuất hiện ko đủ số frames yêu cầu)
             for i in set(self.objects.keys()) - set(temp_objects.keys()) - self.cropped_ids:
@@ -71,12 +71,12 @@ class IntrusionAlertService:
                     captured_images[i] = get_captured_image(self.objects, i)
                     self.cropped_ids.add(i)
                     
-                    # Kiểm tra trạng thái xâm nhập
-                    all_familiar = all(obj.is_familiar for obj in temp_objects.values())
-                    intrude_results["0"] = {
-                        "intrusion": not all_familiar,
-                        "cropped_images": captured_images
-                    }
+            # Kiểm tra trạng thái xâm nhập
+            all_familiar = all(obj.is_familiar for obj in temp_objects.values())
+            intrude_results["0"] = {
+                "intrusion": not all_familiar,
+                "cropped_images": captured_images
+            }
         else:
             intrude_results = {}
             draw_areas(frame, self.areas)
@@ -97,7 +97,7 @@ class IntrusionAlertService:
                             temp_objects_in_area[id] = self.objects[id]
                             area.count += 1
                             self.objects[id].update_intrude(area.area_id, timestamp)
-                            
+
                             if (
                                 (self.objects[id].appearance_count >= self.frame_appearance or
                                 self.objects[id].is_familiar)

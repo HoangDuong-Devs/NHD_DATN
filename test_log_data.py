@@ -1,35 +1,25 @@
-from services.intrusion_monitor import IntrusionAlertService
-import cv2
 import numpy as np
-import time
-from schemas.area import *
-from config.cfg_py import config
-from database.mongodb_client import Database
+from database.minio_client import MinioClient
 
+def log_black_square(minio_client: MinioClient, bucket_name: str, destination_file: str):
+    # Tạo ảnh đen 224x224 (3 kênh màu)
+    black_img = np.zeros((224, 224, 3), dtype=np.uint8)
+    
+    # Upload ảnh lên MinIO
+    success = minio_client.upload_file(black_img, bucket_name, destination_file, content_type="image/jpeg")
+    
+    if success:
+        print(f"Logged black square image to {bucket_name}/{destination_file}")
+    else:
+        print("Failed to log black square image.")
 
-def test_database():
-    # Khởi tạo kết nối (nếu chưa khởi tạo)
-    Database.initialize(config.get("database.mongo_uri", None), "IntrusionAlert")
-
-    # Test insert
-    record = {
-        "name": "Intruder1",
-        "time": "2025-05-19 12:00:00",
-        "location": "Gate A",
-        "alert_level": 5
-    }
-    inserted_id = Database.insert("alerts", record, unique_fields=["name", "time"])
-    print("Insert result:", inserted_id)
-
-    # Test insert trùng (nên trả về "Already exists")
-    duplicate_result = Database.insert("alerts", record, unique_fields=["name", "time"])
-    print("Insert duplicate result:", duplicate_result)
-
-    # Test update
-    filters = {"name": "Intruder1", "time": "2025-05-19 12:00:00"}
-    update_fields = {"alert_level": 7, "resolved": False}
-    update_result = Database.update("alerts", filters, record=update_fields, upsert=False)
-    print("Update result:", update_result)
-
+# Ví dụ sử dụng
 if __name__ == "__main__":
-    test_database()
+    endpoint = "your-minio-endpoint:9000"
+    access_key = "your-access-key"
+    secret_key = "your-secret-key"
+    bucket = "test-bucket"
+    file_name = "black_square.jpg"
+
+    client = MinioClient(endpoint, access_key, secret_key, secure=False)
+    log_black_square(client, bucket, file_name)

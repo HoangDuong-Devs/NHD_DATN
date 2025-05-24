@@ -26,19 +26,5 @@ def intersect_polygon_test(polygon, box):
 
     return False
 
-def crop_body(image, box, stranger_required):
-    image_with_box = image.copy()
-    
-    xmin, ymin, xmax, ymax = map(int, box)
-    height, width = image.shape[:2]  # Lấy kích thước ảnh
-    
-    xmin = max(0, xmin)
-    ymin = max(0, ymin)
-    xmax = min(width, xmax)
-    ymax = min(height, ymax)
-    
-    cropped_image = image_with_box[ymin:ymax, xmin:xmax]
-    
-    return cropped_image, box
     
     

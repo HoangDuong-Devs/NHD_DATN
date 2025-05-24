@@ -64,3 +64,65 @@ class FaceAligner:
         final_aligned = cv2.resize(cropped_face, (self.output_size, self.output_size), interpolation=cv2.INTER_CUBIC)
 
         return final_aligned
+
+
+def extract_aligned_faces_from_people(frame, boxes, ids, face_detector, face_aligner):
+    """
+    Với mỗi người được detect, crop vùng người → chạy face detection + align → trả về ảnh khuôn mặt align (hoặc None nếu không tìm được).
+    
+    Args:
+        frame (np.ndarray): Ảnh gốc.
+        boxes (List[List[int]]): Các bbox của người [x1, y1, x2, y2].
+        ids (List[int]): ID của từng người tương ứng.
+        face_detector: Đối tượng có hàm `process(image)` trả bbox và landmarks.
+        face_aligner: Đối tượng có hàm `align(image, bbox, landmarks)` trả ảnh khuôn mặt đã căn chỉnh.
+
+    Returns:
+        List[dict]: Mỗi phần tử dạng {"id": int, "face": np.ndarray or None}
+    """
+    results = []
+
+    for box, person_id in zip(boxes, ids):
+        x1, y1, x2, y2 = map(int, box)
+        h, w = frame.shape[:2]
+        x1 = max(0, min(x1, w))
+        x2 = max(0, min(x2, w))
+        y1 = max(0, min(y1, h))
+        y2 = max(0, min(y2, h))
+
+        if x2 <= x1 or y2 <= y1:
+            print(f"[WARN] Crop box invalid: {box}")
+            continue
+
+        person_img = frame[y1:y2, x1:x2]
+        if person_img is None or person_img.size == 0:
+            print(f"[WARN] Cropped image empty at ID: {id}")
+            continue
+        person_img_copy = person_img.copy()
+
+        # Chạy face detector trên vùng người
+        image_with_landmarks, faces = face_detector.process(person_img)
+
+        if len(faces) == 0:
+            results.append({
+                "id": person_id,
+                "face": None
+            })
+            continue
+
+        # Lấy khuôn mặt đầu tiên
+        face = faces[0]
+        bbox = face["bbox"]  # (x_min, y_min, x_max, y_max)
+        landmarks = face["landmarks"]
+
+        try:
+            aligned_face = face_aligner.align(person_img_copy, bbox, landmarks)
+        except:
+            aligned_face = None
+
+        results.append({
+            "id": person_id,
+            "face": aligned_face
+        })
+
+    return results

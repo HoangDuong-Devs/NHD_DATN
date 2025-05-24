@@ -10,7 +10,7 @@ class FaceDetectionPredictor:
         
         self.mp_face_mesh = mp.solutions.face_mesh
         self.mp_drawing   = mp.solutions.drawing_utils
-        self.output_size  = 224
+        self.output_size  = 150
         self.face_mesh    = self.mp_face_mesh.FaceMesh(
             min_detection_confidence=detection_conf,
             refine_landmarks        =refine_landmarks
@@ -20,7 +20,7 @@ class FaceDetectionPredictor:
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         mesh_results = self.face_mesh.process(image_rgb)
 
-        ih, iw, _ = image.shape
+        ih, iw, _ = image_rgb.shape
 
         faces = []  # Danh sách mặt, mỗi mặt là dict chứa bbox + landmarks cần align
 

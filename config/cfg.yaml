@@ -4,7 +4,7 @@ human_detection_model:
 face_detection_model:
   name: mediapipe
   model_selection: 1       
-  min_detection_confidence: 0.5
+  min_detection_confidence: 0.2
   refine_landmarks: false
 
 tracker:

@@ -3,11 +3,26 @@
 # import mediapipe as mp
 # from detectors.face_detector import FaceDetectionPredictor
 # from utils.face_alignment import FaceAligner
+
+# import cv2
+
+
 # def main():
 #     predictor = FaceDetectionPredictor()
-#     aligner = FaceAligner(output_size=224)
-#     # Đọc ảnh đầu vào
-#     image = cv2.imread("test.png")
+#     aligner = FaceAligner(output_size=150)
+
+#     # Đọc ảnh
+#     image = cv2.imread(r"F:\VScode_NHD\intrusion_alert\image.png")
+#     print("Kích thước ảnh gốc:", image.shape)
+#     h, w, _ = image.shape
+#     cropped_height = int((1/2) * h)
+#     image = image[0:cropped_height, 0:w]
+
+#     target_width = 224
+#     scale_ratio = target_width / image.shape[1]
+#     target_height = int(image.shape[0] * scale_ratio)
+#     image = cv2.resize(image, (target_width, target_height))
+    
 #     image_1 = image.copy()
 #     if image is None:
 #         print("Không đọc được ảnh input.jpg")
@@ -56,7 +71,8 @@ import torch
 
 video_path = r"F:\VScode_NHD\intrusion_alert\video_test2.mp4"  # Đường dẫn video đầu vào
 output_path = "output_video_2.avi"  # Đường dẫn video đầu ra
-cap = cv2.VideoCapture(video_path)
+rtsp_path = r"http://192.168.0.102:4747/video"
+cap = cv2.VideoCapture(rtsp_path)
 width = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
 height = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 fps = cap.get(cv2.CAP_PROP_FPS)
@@ -77,9 +93,8 @@ def main():
         start_time = time.time()
         ret, frame = cap.read()
         
-        if not ret:
-            break
         
+
         res = service.service_implement(frame, frame_idx)
         log_res._intrusion_alert_log(res)
         
@@ -94,9 +109,8 @@ def main():
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
         
-        frame_idx += 1
         print(f"Frame {frame_idx} processed in {end_time - start_time:.2f} seconds")
-        
+        frame_idx += 1
     cap.release()
     out.release()
     cv2.destroyAllWindows()

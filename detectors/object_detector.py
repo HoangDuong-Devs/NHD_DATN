@@ -8,7 +8,7 @@ from ultralytics import YOLOE
 class HumanDetectionPredictor:
     def __init__(self, 
                  yolo_model_path="yoloe-11l-seg.pt", 
-                 detect_interval=5, 
+                 detect_interval=3, 
                  use_tracking_prediction=False
     ):
         self.yolo_model_path = yolo_model_path
@@ -18,7 +18,7 @@ class HumanDetectionPredictor:
         # Khởi tạo mô hình YOLO và tracker
         self.yolo_model = YOLOE(self.yolo_model_path)
         self.yolo_model.set_classes(["person"], self.yolo_model.get_text_pe(["person"]))
-        self.tracker = ObjectTracker(max_age=30, n_init=2)
+        self.tracker = ObjectTracker(max_age=15, n_init=2)
 
         # Nếu cấu hình dùng dự đoán thì mới cần lưu
         self.boxes_yolo_prev = []

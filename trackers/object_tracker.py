@@ -2,7 +2,7 @@ from deep_sort_realtime.deepsort_tracker import DeepSort
 from config.cfg_py import config
 
 class ObjectTracker:
-    def __init__(self, max_age=30, n_init=2, max_cosine_distance=0.4, nn_budget=100):
+    def __init__(self, max_age=30, n_init=2, max_cosine_distance=0.2, nn_budget=100):
         self.tracker = DeepSort(max_age=max_age, n_init=n_init, max_cosine_distance=max_cosine_distance, nn_budget=nn_budget)
         self.tracks_prev = {}
 
@@ -46,10 +46,25 @@ class ObjectTracker:
         tracks = self.tracker.update_tracks(boxes_input, frame=frame)
 
         # Lưu bbox track lại để so sánh lần detect sau
+        h, w = frame.shape[:2]
         tracks_prev = {}
+
         for track in tracks:
             if track.is_confirmed():
                 l, t, r, b = map(int, track.to_ltrb())
+
+                # Clamp bbox to image
+                l = max(0, min(l, w))
+                r = max(0, min(r, w))
+                t = max(0, min(t, h))
+                b = max(0, min(b, h))
+
+                # Bỏ qua bbox không hợp lệ
+                if r <= l or b <= t:
+                    print(f"[SKIP] Track {track.track_id} có bbox không hợp lệ: ({l},{t},{r},{b})")
+                    continue
+
                 tracks_prev[track.track_id] = [l, t, r, b]
 
         return tracks, tracks_prev
+

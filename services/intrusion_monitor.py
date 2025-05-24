@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from detectors.object_detector import HumanDetectionPredictor
 from detectors.face_detector import FaceDetectionPredictor
 from face_recognition_module.recognition import FaceRecognitionModule
+from utils.face_alignment import *
 import cv2
 from schemas.area import *
 from schemas.object import *
@@ -14,7 +15,6 @@ class IntrusionAlertService:
         self.objects                  = {}                       # Từ điển đối tượng đã xuất hiện 
         self.differences              = {}                       # Từ điển lượng thời gian biến mất của các đối tượng
         self.cropped_ids              = set()                    # set đối tượng đã được capture
-        self.face_recognition_feature = True                     # Sử dụng chức năng nhận diện khuôn mặt 
         self.areas                    = kwargs.get("areas", [])  # Danh sách các khu vực   
         self.sub_detector             = None                                 
         self.setup()
@@ -24,10 +24,11 @@ class IntrusionAlertService:
         self.frame_appearance = 50   # Số frame xuất hiện của một đối tượng để thực hiện capture
         self.time_out         = 4    # Thời gian giới hạn đối tượng biến mất
     def initialize_detector(self, detector):
-        if self.face_recognition_feature:
-            self.human_detector   = HumanDetectionPredictor(yolo_model_path="yoloe-11l-seg.pt", detect_interval=4)          
-            self.face_detector    = FaceDetectionPredictor()
-            self.face_recognition = FaceRecognitionModule("")
+        self.human_detector   = HumanDetectionPredictor(yolo_model_path="yoloe-11l-seg.pt", detect_interval=1)          
+        self.face_detector    = FaceDetectionPredictor()
+        # self.face_recognition = FaceRecognitionModule()
+        self.aligner          = FaceAligner(output_size=150)
+
             
     def model_inference(self, image, **kwargs):
         return self.human_detector.predict(image, **kwargs)
@@ -38,7 +39,15 @@ class IntrusionAlertService:
     # Cài đặt dịch vụ
     def service_implement(self, frame, idx):
         boxes, confs, clss, ids = self.model_inference(frame, frame_idx=idx)
-        
+        print(boxes)
+        results = extract_aligned_faces_from_people(
+            frame=frame,
+            boxes=boxes,
+            ids=ids,
+            face_detector=self.face_detector,       # FaceDetectionPredictor của bạn
+            face_aligner=self.aligner  # Aligner bạn đang dùng
+        )
+        image_origin = frame.copy()
         visualize_boxes_with_ids(frame, boxes, ids, color=(0, 255, 0), thickness=2)
         
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -50,7 +59,7 @@ class IntrusionAlertService:
             captured_images = {}  # Biến lưu giữ hình ảnh tạm cho Non-Area
         
             for i, (box, id) in enumerate(zip(boxes, ids)):
-                update_objects(self.objects, id, box, frame)
+                update_objects(self.objects, id, box, image_origin)
                 
                 # Lưu trữ các đối tượng xuất hiện tại thời điểm hiện tại
                 temp_objects[id] = self.objects[id]
@@ -88,7 +97,7 @@ class IntrusionAlertService:
                 # Giải quyết trường hợp có Khu vực (Area) và Nhận dạng khuôn mặt (Face recognition)
                 if self.face_recognition_feature:                        
                     for i, (box, id) in enumerate(zip(boxes, ids)):
-                        update_objects(self.objects, id, box, frame)
+                        update_objects(self.objects, id, box, image_origin)
                         
                         if not self.objects[id].is_familiar:
                             pass                                

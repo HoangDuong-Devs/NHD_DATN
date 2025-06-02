@@ -20,6 +20,17 @@ class MinioClient:
                            secure    =secure)
 
     def upload_file(self, data, bucket_name, destination_file, content_type=None):
+        """_Tải dữ liệu lên MinIO bucket với hỗ trợ nhiều định dạng dữ liệu_
+
+        Args:
+            data (_np.ndarray | bytes | file-like object_): _Dữ liệu cần tải lên (ảnh NumPy, bytes, hoặc file-like object)_
+            bucket_name (_str_): _Tên MinIO bucket để lưu trữ dữ liệu_
+            destination_file (_str_): _Tên tệp đích trong bucket_
+            content_type (_str_, optional): _Loại nội dung MIME (ví dụ: 'image/jpeg', 'application/octet-stream'). Tự động xác định nếu không cung cấp._
+
+        Returns:
+            _bool_: _True nếu tải lên thành công, False nếu thất bại_
+        """
         try:
             if not self.minio.bucket_exists(bucket_name):
                 self.minio.make_bucket(bucket_name)
@@ -40,7 +51,7 @@ class MinioClient:
                 data = io.BytesIO(data)
                 length = len(data.getvalue())
             
-            elif hasattr(data, "read"):  # file-like object
+            elif hasattr(data, "read"):
                 if content_type is None:
                     content_type = "application/octet-stream"
                 length = os.fstat(data.fileno()).st_size
@@ -59,6 +70,16 @@ class MinioClient:
             return False
 
     def crawl_data(self, bucket_name, prefix=None, local_dir="./downloaded"):
+        """_Tải toàn bộ đối tượng từ MinIO bucket về thư mục cục bộ_
+
+        Args:
+            bucket_name (_str_): _Tên của MinIO bucket cần tải dữ liệu_
+            prefix (_str_, optional): _Tiền tố để lọc các object cần tải (thư mục con). Mặc định là None._
+            local_dir (_str_, optional): _Thư mục cục bộ để lưu dữ liệu tải về. Mặc định là "./downloaded"._
+
+        Returns:
+            None
+        """
         if prefix:
             objects = self.minio.list_objects(bucket_name, prefix=prefix, recursive=True)
         else:

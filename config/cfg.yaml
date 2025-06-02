@@ -1,5 +1,8 @@
 human_detection_model:
-  
+  name: yolo11
+  model_path: F:\VScode_NHD\intrusion_alert\models\best.pt
+  detect_interval: 1
+  min_detection_confidence: 0.25
 
 face_detection_model:
   name: mediapipe
@@ -7,6 +10,9 @@ face_detection_model:
   min_detection_confidence: 0.2
   refine_landmarks: false
 
+face_recognition:
+  database_path: F:\VScode_NHD\intrusion_alert\face_db.json
+  
 tracker:
   max_age: 30
   n_init: 3

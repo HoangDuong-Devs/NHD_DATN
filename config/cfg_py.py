@@ -2,18 +2,43 @@ import yaml
 
 class Config:
     def __init__(self, config_file="config/cfg.yaml"):
+        """
+        Khởi tạo Config với file YAML cấu hình.
+        
+        Args:
+            config_file (str): Đường dẫn đến file cấu hình YAML.
+        """
         self.config_file = config_file
         self.config = self.load_config()
 
     def load_config(self):
+        """
+        Đọc và tải dữ liệu từ file YAML.
+        
+        Returns:
+            dict: Dữ liệu cấu hình được load.
+        """
         with open(self.config_file, 'r') as f:
             return yaml.safe_load(f)
 
     def get(self, key, default=None):
+        """
+        Lấy giá trị cấu hình theo key dạng 'a.b.c'.
+        
+        Args:
+            key (str): Chuỗi key phân tách bởi dấu chấm.
+            default: Giá trị trả về nếu key không tồn tại.
+        
+        Returns:
+            Giá trị tương ứng với key hoặc default nếu không tìm thấy.
+        """
         keys = key.split('.')
         value = self.config
         for k in keys:
-            value = value.get(k, default)
+            if isinstance(value, dict):
+                value = value.get(k, default)
+            else:
+                return default
         return value
 
 # Khởi tạo cấu hình

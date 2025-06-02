@@ -1,17 +1,19 @@
 import cv2 
 import numpy as np
-from schemas.area import Area
-
         
 def intersect_polygon_test(polygon, box):
-    """_summary_
-        
+    """
+    Kiểm tra xem một bounding box có giao với polygon hay không.
+
     Args:
-        polygon (_list_)         : _Tọa độ các đỉnh của Polygon_
-        box     (_numpy.ndarray_): _Bounding box của đối tượng_
+        polygon (list of tuple): Danh sách các điểm (x, y) tạo thành đa giác (polygon).
+        box (numpy.ndarray hoặc tuple): Bounding box dưới dạng (x_min, y_min, x_max, y_max).
 
     Returns:
-        _bool_: _Kiểm tra xem box đó có giao với Polygon không_
+        bool: 
+            - True nếu bounding box và polygon có phần giao nhau (ít nhất một điểm của polygon nằm trong bounding box
+              hoặc ít nhất một điểm của bounding box nằm trong polygon).
+            - False nếu không có giao nhau.
     """
     x_min, y_min, x_max, y_max = box
 

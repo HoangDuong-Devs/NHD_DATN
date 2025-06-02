@@ -31,7 +31,14 @@ def extract_face_embeddings(image_path):
 
 def build_face_database(folder_path, save_path='face_db_face_recognition.json'):
     """
-    Xây dựng database khuôn mặt từ thư mục ảnh và lưu dưới dạng JSON
+    Xây dựng cơ sở dữ liệu khuôn mặt từ thư mục ảnh và lưu dưới dạng file JSON.
+
+    Args:
+        folder_path (str): Đường dẫn thư mục chứa các thư mục con, mỗi thư mục con chứa ảnh khuôn mặt của một người.
+        save_path (str, optional): Đường dẫn file JSON để lưu dữ liệu khuôn mặt. Mặc định là 'face_db_face_recognition.json'.
+
+    Returns:
+        None
     """
     face_db = []
 
@@ -43,12 +50,10 @@ def build_face_database(folder_path, save_path='face_db_face_recognition.json'):
         for img_name in os.listdir(person_path):
             img_path = os.path.join(person_path, img_name)
             
-            # Trích xuất embedding vector từ ảnh
             embedding = extract_face_embeddings(img_path)
             if embedding is None:
                 continue
 
-            # Lưu thông tin ID và vector embedding vào danh sách
             face_db.append({
                 "id": person_id,
                 "vector": embedding.tolist()  # Chuyển từ numpy array sang list để lưu vào JSON
@@ -61,5 +66,5 @@ def build_face_database(folder_path, save_path='face_db_face_recognition.json'):
 
 if __name__ == "__main__":
     # Đường dẫn thư mục chứa ảnh khuôn mặt (đã crop)
-    folder_path = "faces_dataset"  # Chỉnh lại theo thư mục của bạn
+    folder_path = r"F:\VScode_NHD\intrusion_alert\faces_dataset" 
     build_face_database(folder_path)

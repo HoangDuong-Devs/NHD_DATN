@@ -1,7 +1,6 @@
 from database.mongodb_client import Database
 from database.minio_client import *
 import uuid
-import base64
 from datetime import datetime 
 from config.cfg_py import config
 import cv2
@@ -54,7 +53,6 @@ class LogResults():
                 
                 for zone_id, zone_information in result.items():
                     images = zone_information.get('cropped_images', {}) 
-                    print(images)
                     for id_obj, obj_information in images.items():
                         try:
                             image = obj_information["image"]
@@ -62,7 +60,7 @@ class LogResults():
                             file_name = f"{time_str}_{name}_{int(id_obj)}.jpg"
                             minio_des = f"{date_str}/{hour_str}/{zone_id}/{file_name}"
                             
-                            minio_mess = self.minio_client.upload_file(
+                            self.minio_client.upload_file(
                                 data            = cv2.cvtColor(image, cv2.COLOR_BGR2RGB),
                                 bucket_name     = config.get("minio.bucket_name", "intrusion-images"),
                                 destination_file=minio_des,
@@ -83,7 +81,7 @@ class LogResults():
                                     "timepoint": time_str
                                 }
                                 update_doc = {"$push": {"intrusion_logs": record}}
-                                # Ghi vào MongoDB (update với filters)
+                                # Ghi vào MongoDB
                                 Database._db[self.table_name].update_one(self.filters, update_doc, upsert=True)
                         successfully_logged = True
                     except Exception as e:
@@ -95,5 +93,3 @@ class LogResults():
             except Exception as e:
                 print(f"Error processing intrusion results: {e}")
                 return
-
-            

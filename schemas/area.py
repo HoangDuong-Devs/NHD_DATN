@@ -10,9 +10,25 @@ class Area:
         return f"Area(area_id={self.area_id}, contour={self.contour})"
     
 
-def draw_areas(img, areas):
-    if areas == None:
+def draw_areas(img, areas, intrusion_count: int = 0):
+    """
+    Vẽ các khu vực lên ảnh hoặc tô đỏ ảnh nếu không có khu vực nhưng có đối tượng xâm nhập.
+
+    Parameters:
+        img (np.ndarray): Ảnh đầu vào.
+        areas (list | None): Danh sách các khu vực hoặc None.
+        intrusion_count (int): Số lượng đối tượng xâm nhập (mặc định 0).
+    """
+    if not areas:
+        text = f"Intrusions: {intrusion_count}"
+        cv2.putText(img, text, (img.shape[1] - 220, 30), cv2.FONT_HERSHEY_SIMPLEX,
+                    1.0, (0, 0, 255), 2)
+
+        if intrusion_count > 0:
+            red_overlay = np.full_like(img, (0, 0, 150))
+            img[:] = cv2.addWeighted(img, 0.7, red_overlay, 0.3, 0)
         return
+
     for area in areas:
         id_int = int(area.area_id)
         color = (
@@ -22,9 +38,8 @@ def draw_areas(img, areas):
         )
         if area.count > 0:
             color = (255 - color[0], 255 - color[1], 255 - color[2])
-        else:
-            color = color
         cv2.polylines(img, [area.contour], True, color, 2)
+
         text = f"Area {area.area_id}: {area.count}"
         cv2.putText(
             img,

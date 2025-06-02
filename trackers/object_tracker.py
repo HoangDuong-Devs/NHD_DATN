@@ -2,11 +2,21 @@ from deep_sort_realtime.deepsort_tracker import DeepSort
 from config.cfg_py import config
 
 class ObjectTracker:
-    def __init__(self, max_age=30, n_init=2, max_cosine_distance=0.2, nn_budget=100):
+    def __init__(self, max_age=30, n_init=2, max_cosine_distance=0.5, nn_budget=100):
         self.tracker = DeepSort(max_age=max_age, n_init=n_init, max_cosine_distance=max_cosine_distance, nn_budget=nn_budget)
         self.tracks_prev = {}
 
     def compute_iou(self, boxA, boxB):
+        """
+        Tính Intersection over Union (IoU) giữa hai bounding box.
+
+        Args:
+            boxA (tuple hoặc list): Bounding box thứ nhất dưới dạng (x_min, y_min, x_max, y_max).
+            boxB (tuple hoặc list): Bounding box thứ hai dưới dạng (x_min, y_min, x_max, y_max).
+
+        Returns:
+            float: Giá trị IoU nằm trong khoảng [0, 1], thể hiện tỷ lệ giao giữa hai bounding box so với phần hợp nhất của chúng.
+        """
         xA = max(boxA[0], boxB[0])
         yA = max(boxA[1], boxB[1])
         xB = min(boxA[2], boxB[2])
@@ -17,31 +27,18 @@ class ObjectTracker:
         iou = interArea / float(boxAArea + boxBArea - interArea + 1e-6)
         return iou
 
-    def match_deepsort_with_yolo(self, track_bboxes, yolo_bboxes, iou_thresh=0.1):
-        matched = []
-        used_yolo = set()
-
-        for track_id, box_ds in track_bboxes.items():
-            best_iou, best_yolo = 0, None
-            for idx, (box_yolo, _, _) in enumerate(yolo_bboxes):
-                if idx in used_yolo:
-                    continue
-                x1, y1, w, h = box_yolo
-                box_y = [x1, y1, x1 + w, y1 + h]
-                iou = self.compute_iou(box_ds, box_y)
-                if iou > best_iou:
-                    best_iou = iou
-                    best_yolo = idx
-
-            if best_iou >= iou_thresh and best_yolo is not None:
-                matched.append(yolo_bboxes[best_yolo])  # giữ box YOLO
-                used_yolo.add(best_yolo)
-
-        # Thêm box chưa match (coi là object mới)
-        unmatched = [yolo_bboxes[i] for i in range(len(yolo_bboxes)) if i not in used_yolo]
-        return matched + unmatched
-
     def update_tracks(self, boxes_input, frame):
+        """
+        Cập nhật tracker với các bounding box mới, trả về danh sách các track hiện tại và dictionary chứa bounding box của từng track.
+
+        Args:
+            boxes_input (list): Danh sách các bounding box đầu vào để cập nhật tracker (thường là kết quả từ detector).
+            frame (numpy.ndarray): Khung hình hiện tại (dùng để giới hạn bbox trong kích thước ảnh).
+
+        Returns:
+            tracks (list): Danh sách các đối tượng track sau khi cập nhật, mỗi track có trạng thái và bbox.
+            tracks_prev (dict): Dictionary dạng {track_id: [left, top, right, bottom]} chứa bounding box đã clamp (giới hạn trong ảnh) của từng track đã được xác nhận (confirmed).
+        """
         # Update tracks with new boxes
         tracks = self.tracker.update_tracks(boxes_input, frame=frame)
 
@@ -53,7 +50,6 @@ class ObjectTracker:
             if track.is_confirmed():
                 l, t, r, b = map(int, track.to_ltrb())
 
-                # Clamp bbox to image
                 l = max(0, min(l, w))
                 r = max(0, min(r, w))
                 t = max(0, min(t, h))
@@ -61,7 +57,6 @@ class ObjectTracker:
 
                 # Bỏ qua bbox không hợp lệ
                 if r <= l or b <= t:
-                    print(f"[SKIP] Track {track.track_id} có bbox không hợp lệ: ({l},{t},{r},{b})")
                     continue
 
                 tracks_prev[track.track_id] = [l, t, r, b]

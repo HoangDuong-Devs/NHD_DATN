@@ -22,31 +22,29 @@ class IntrusionAlertService:
 
     def setup(self):
         self.frame_appearance = 50   # Số frame xuất hiện của một đối tượng để thực hiện capture
-        self.time_out         = 4    # Thời gian giới hạn đối tượng biến mất
+        self.time_out         = 4     # Thời gian giới hạn đối tượng biến mất
     def initialize_detector(self, detector):
-        self.human_detector   = HumanDetectionPredictor(yolo_model_path="yoloe-11l-seg.pt", detect_interval=1)          
+        self.human_detector   = HumanDetectionPredictor(detect_interval=1, use_tracking_prediction=False)          
         self.face_detector    = FaceDetectionPredictor()
-        # self.face_recognition = FaceRecognitionModule()
+        self.face_recognition = FaceRecognitionModule()
         self.aligner          = FaceAligner(output_size=150)
 
             
     def model_inference(self, image, **kwargs):
         return self.human_detector.predict(image, **kwargs)
     
-    def sub_model_inference(self, image, **kwargs):
-        return self.face_detector.predict(image, **kwargs)
-    
     # Cài đặt dịch vụ
     def service_implement(self, frame, idx):
         boxes, confs, clss, ids = self.model_inference(frame, frame_idx=idx)
-        print(boxes)
-        results = extract_aligned_faces_from_people(
+        intrusion_count = len(boxes)
+        faces = extract_aligned_faces_from_people(
             frame=frame,
             boxes=boxes,
             ids=ids,
-            face_detector=self.face_detector,       # FaceDetectionPredictor của bạn
-            face_aligner=self.aligner  # Aligner bạn đang dùng
+            face_detector=self.face_detector,
+            face_aligner=self.aligner  
         )
+        
         image_origin = frame.copy()
         visualize_boxes_with_ids(frame, boxes, ids, color=(0, 255, 0), thickness=2)
         
@@ -55,18 +53,38 @@ class IntrusionAlertService:
         temp_objects    = {}
         
         intrude_results = {}
+        # Giải quyết trường hợp có không có Khu vực (Non Areas)
         if not self.areas:
-            captured_images = {}  # Biến lưu giữ hình ảnh tạm cho Non-Area
+            draw_areas(frame, self.areas, intrusion_count=intrusion_count)
+            captured_images = {}
         
             for i, (box, id) in enumerate(zip(boxes, ids)):
                 update_objects(self.objects, id, box, image_origin)
                 
                 # Lưu trữ các đối tượng xuất hiện tại thời điểm hiện tại
                 temp_objects[id] = self.objects[id]
-                print(self.objects[id].appearance_count)
+                
+                if not temp_objects[id].is_familiar:
+                    face_crop = None
+                    for face in faces:
+                        if face["id"] == id:
+                            face_crop = face["face"]
+                            break
+                    
+                    if face_crop is not None:
+                        temp_objects[id].latest_face = face_crop
+                        person_name, score = self.face_recognition.recognize(face_crop)
+                        temp_objects[id].name = person_name
+                        temp_objects[id].recognition_score = score
+                        self.objects[id].name = person_name
+                        
+                        if person_name != "unknown":
+                            temp_objects[id].set_familiar()
+                        
                 # Kiểm tra điều kiện để capture đối tượng
                 if (
-                    (self.objects[id].appearance_count) >= self.frame_appearance
+                    (self.objects[id].appearance_count >= self.frame_appearance
+                    or self.objects[id].is_familiar)
                     and id not in self.cropped_ids
                     and self.objects[id].latest_image is not None
                 ):
@@ -94,28 +112,41 @@ class IntrusionAlertService:
                 temp_objects_in_area = {}  # Lưu các đối tượng xuất hiện trong khu vực hiện tại
                 captured_images = {}       # Lưu ảnh đã cắt cho khu vực này
                 
-                # Giải quyết trường hợp có Khu vực (Area) và Nhận dạng khuôn mặt (Face recognition)
-                if self.face_recognition_feature:                        
-                    for i, (box, id) in enumerate(zip(boxes, ids)):
-                        update_objects(self.objects, id, box, image_origin)
-                        
-                        if not self.objects[id].is_familiar:
-                            pass                                
-                                
-                        if intersect_polygon_test(area.contour, box):
-                            temp_objects_in_area[id] = self.objects[id]
-                            area.count += 1
-                            self.objects[id].update_intrude(area.area_id, timestamp)
+                # Giải quyết trường hợp có Khu vực (Areas)
+                for i, (box, id) in enumerate(zip(boxes, ids)):
+                    update_objects(self.objects, id, box, image_origin)
+                    temp_objects[id] = self.objects[id]
 
-                            if (
-                                (self.objects[id].appearance_count >= self.frame_appearance or
-                                self.objects[id].is_familiar)
-                                and not (id, area.area_id) in self.cropped_ids
-                                and self.objects[id].latest_image is not None
-                            ):
-                                captured_images[id] = get_captured_image(self.objects, id)
-                                self.cropped_ids.add((id, area.area_id))
-                
+                    if not self.objects[id].is_familiar:
+                        face_crop = None
+                        for face in faces:
+                            if face["id"] == id:
+                                face_crop = face["face"]
+                                break     
+                        
+                        if face_crop is not None:                        
+                            self.objects[id].latest_face = face_crop
+                            person_name, score = self.face_recognition.recognize(face_crop)
+                            self.objects[id].name = person_name
+                            self.objects[id].recognition_score = score
+                            
+                            if person_name != "unknown":
+                                self.objects[id].set_familiar()
+                            
+                    if intersect_polygon_test(area.contour, box):
+                        temp_objects_in_area[id] = self.objects[id]
+                        area.count += 1
+                        self.objects[id].update_intrude(area.area_id, timestamp)
+
+                        if (
+                            (self.objects[id].appearance_count >= self.frame_appearance or
+                            self.objects[id].is_familiar)
+                            and not (id, area.area_id) in self.cropped_ids
+                            and self.objects[id].latest_image is not None
+                        ):
+                            captured_images[id] = get_captured_image(self.objects, id)
+                            self.cropped_ids.add((id, area.area_id))
+            
                 for i in set(self.objects.keys()) - set(temp_objects_in_area.keys()):
                     if (i, area.area_id) not in self.cropped_ids and self.objects[i].intrude.get(area.area_id, False) and self.objects[i].latest_image is not None:
                         self.differences[i] = datetime.now() - self.objects[i].latest_time
@@ -130,11 +161,22 @@ class IntrusionAlertService:
                     "cropped_images": captured_images
                 }
         
+        faces = [
+            {
+                "id": obj.id,
+                "face": obj.latest_face,
+                "name": obj.name,
+                "confidence": obj.recognition_score
+            }
+            for _, obj in temp_objects.items()
+        ]
+        
         format_result = {
             "image": frame,
             "timestamp": timestamp,
-            "intrusion_results": intrude_results
+            "intrusion_results": intrude_results,
+            "faces": faces
         }
-        
+
         return format_result
         

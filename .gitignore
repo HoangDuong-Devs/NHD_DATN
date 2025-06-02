@@ -5,8 +5,11 @@ video_test2.mp4
 yoloe-11l-seg.pt
 test.png
 output_video_2.avi
-
-
+faces_dataset/
+models/
+test_extract_face.py
+output_video_ui.avi
+test.mp4
 __pycache__/
 *.pyc
 *.pyo

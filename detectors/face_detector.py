@@ -17,12 +17,24 @@ class FaceDetectionPredictor:
         )
 
     def process(self, image):
+        """
+        Xử lý ảnh đầu vào để phát hiện mặt và tính bounding box cùng landmarks.
+
+        Args:
+            image (np.ndarray): Ảnh đầu vào (BGR).
+
+        Returns:
+            tuple: (ảnh gốc (np.ndarray), danh sách mặt).
+                Mỗi mặt là dict chứa:
+                    - 'bbox': tuple (x_min, y_min, x_max, y_max)
+                    - 'landmarks': đối tượng landmarks từ mediapipe
+        """
         image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         mesh_results = self.face_mesh.process(image_rgb)
 
         ih, iw, _ = image_rgb.shape
 
-        faces = []  # Danh sách mặt, mỗi mặt là dict chứa bbox + landmarks cần align
+        faces = []
 
         if mesh_results.multi_face_landmarks:
             for face_landmarks in mesh_results.multi_face_landmarks:
@@ -37,17 +49,17 @@ class FaceDetectionPredictor:
                     x_max = max(x_max, x)
                     y_max = max(y_max, y)
 
-                # Vẽ bounding box
-                cv2.rectangle(image, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2)
+                # # Vẽ bounding box
+                # cv2.rectangle(image, (x_min, y_min), (x_max, y_max), (0, 255, 0), 2)
 
-                # Vẽ landmarks
-                self.mp_drawing.draw_landmarks(
-                    image,
-                    face_landmarks,
-                    self.mp_face_mesh.FACEMESH_CONTOURS,
-                    landmark_drawing_spec=self.mp_drawing.DrawingSpec(color=(0, 255, 255), thickness=1, circle_radius=1),
-                    connection_drawing_spec=self.mp_drawing.DrawingSpec(color=(0, 255, 0), thickness=1),
-                )
+                # # Vẽ landmarks
+                # self.mp_drawing.draw_landmarks(
+                #     image,
+                #     face_landmarks,
+                #     self.mp_face_mesh.FACEMESH_CONTOURS,
+                #     landmark_drawing_spec=self.mp_drawing.DrawingSpec(color=(0, 255, 255), thickness=1, circle_radius=1),
+                #     connection_drawing_spec=self.mp_drawing.DrawingSpec(color=(0, 255, 0), thickness=1),
+                # )
 
                 faces.append({
                     "bbox": (x_min, y_min, x_max, y_max),
